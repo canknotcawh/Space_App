@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Lắng nghe Trái Đất · Earth Listens — NASA Space Apps Challenge</title>
+<meta name="description" content="Khám phá địa hình và khí hậu của mọi quốc gia trên Trái Đất qua âm thanh (data sonification) và dữ liệu vệ tinh thật." />
+<meta name="theme-color" content="#0B0F2A" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<style>
+/* ==========================================================================
+   NGHE TRÁI ĐẤT — Design system
+   Palette: deep space #0B0F2A → #1A1446, cyan #00E5FF, magenta #FF3CAC,
+   lime #C6FF3D, orange #FF8A00. Body text ≥16px, WCAG AA contrast.
+   ========================================================================== */
+:root{
+  --bg-1:#0B0F2A;
+  --bg-2:#1A1446;
+  --bg-3:#070A1E;
+  --cyan:#00E5FF;
+  --magenta:#FF3CAC;
+  --lime:#C6FF3D;
+  --orange:#FF8A00;
+  --amber:#FFC24B;
+
+  --ink:#F4F6FF;
+  --ink-2:#C9D0EA;
+  --ink-3:#98A3C7;
+
+  --glass:rgba(19,23,54,.62);
+  --glass-2:rgba(255,255,255,.055);
+  --line:rgba(255,255,255,.12);
+  --line-2:rgba(255,255,255,.07);
+
+  --radius-xl:26px;
+  --radius-lg:20px;
+  --radius-md:14px;
+  --radius-sm:10px;
+
+  --font-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-display:"Space Grotesk","Be Vietnam Pro",system-ui,sans-serif;
+
+  --shadow-1:0 18px 48px -22px rgba(0,0,0,.85);
+  --shadow-glow:0 0 0 1px rgba(0,229,255,.18),0 22px 60px -30px rgba(0,229,255,.5);
+
+  --header-h:74px;
+  --dock-h:246px;
+  --panel-w:396px;
+
+  --ease:cubic-bezier(.22,.8,.24,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+html{-webkit-text-size-adjust:100%;overflow-x:clip}
+body{
+  margin:0;
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.55;
+  color:var(--ink);
+  background:
+    radial-gradient(1200px 700px at 12% -10%, rgba(58,36,140,.55), transparent 62%),
+    radial-gradient(900px 600px at 92% 4%, rgba(0,229,255,.13), transparent 60%),
+    radial-gradient(1000px 800px at 60% 120%, rgba(255,60,172,.12), transparent 65%),
+    linear-gradient(165deg,var(--bg-1) 0%, #101038 46%, var(--bg-2) 100%);
+  background-attachment:fixed;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+h1,h2,h3,h4{font-family:var(--font-display);margin:0;line-height:1.15;letter-spacing:-.015em}
+p{margin:0}
+button{font:inherit;color:inherit}
+button,input,select{font-family:inherit}
+a{color:var(--cyan)}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:6px}
+::selection{background:rgba(255,60,172,.42)}
+
+/* Star field ------------------------------------------------------------- */
+#starfield{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.9}
+.aurora{
+  position:fixed;inset:-20% -10% auto -10%;height:70vh;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at 30% 40%, rgba(0,229,255,.16), transparent 55%),
+             radial-gradient(ellipse at 75% 25%, rgba(255,60,172,.14), transparent 55%);
+  filter:blur(30px);opacity:.75;
+}
+
+/* Utilities -------------------------------------------------------------- */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip-link{
+  position:fixed;left:14px;top:-80px;z-index:200;padding:12px 18px;border-radius:12px;
+  background:var(--cyan);color:#04101a;font-weight:700;text-decoration:none;transition:top .2s var(--ease)
+}
+.skip-link:focus{top:14px}
+
+/* Glass surfaces --------------------------------------------------------- */
+.glass{
+  background:linear-gradient(158deg, rgba(255,255,255,.095), rgba(255,255,255,.03) 46%, rgba(255,255,255,.05));
+  border:1px solid var(--line);
+  border-radius:var(--radius-xl);
+  backdrop-filter:blur(22px) saturate(135%);
+  -webkit-backdrop-filter:blur(22px) saturate(135%);
+  box-shadow:var(--shadow-1), inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+/* App frame -------------------------------------------------------------- */
+.app{
+  position:relative;z-index:1;height:100dvh;
+  display:grid;grid-template-rows:var(--header-h) minmax(0,1fr) var(--dock-h) auto;
+}
+body.dock-collapsed{--dock-h:112px}
+
+/* Header ----------------------------------------------------------------- */
+.topbar{
+  display:flex;align-items:center;gap:18px;padding:0 20px;
+  border-bottom:1px solid var(--line-2);
+  background:linear-gradient(180deg, rgba(9,12,34,.72), rgba(9,12,34,.25));
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;flex:0 0 auto}
+.brand-mark{
+  width:42px;height:42px;flex:0 0 auto;border-radius:14px;display:grid;place-items:center;
+  background:conic-gradient(from 210deg, var(--cyan), var(--magenta), var(--orange), var(--lime), var(--cyan));
+  box-shadow:0 0 26px -6px rgba(0,229,255,.7);
+  position:relative;overflow:hidden;
+}
+.brand-mark::after{
+  content:"";position:absolute;inset:3px;border-radius:11px;
+  background:radial-gradient(circle at 32% 28%, #1b2350, #080b1e 72%);
+}
+.brand-mark svg{position:relative;z-index:1;width:22px;height:22px;color:var(--cyan)}
+.brand h1{font-size:19px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+.brand h1 .accent{
+  background:linear-gradient(96deg,var(--cyan),var(--lime) 55%,var(--magenta));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.brand p{font-size:11.5px;color:var(--ink-3);letter-spacing:.09em;text-transform:uppercase;white-space:nowrap}
+
+/* Search ----------------------------------------------------------------- */
+.search-wrap{position:relative;flex:1 1 auto;max-width:430px;min-width:180px}
+.search-box{position:relative;display:flex;align-items:center}
+.search-box svg{position:absolute;left:14px;width:17px;height:17px;color:var(--ink-3);pointer-events:none}
+#search{
+  width:100%;height:44px;padding:0 40px 0 41px;border-radius:14px;
+  background:rgba(6,9,26,.62);border:1px solid var(--line);
+  color:var(--ink);font-size:15.5px;
+  transition:border-color .2s var(--ease), box-shadow .2s var(--ease), background .2s var(--ease);
+}
+#search::placeholder{color:var(--ink-3)}
+#search:hover{border-color:rgba(0,229,255,.38)}
+#search:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,229,255,.18);background:rgba(4,8,22,.85)}
+.search-clear{
+  position:absolute;right:8px;width:28px;height:28px;border-radius:9px;border:0;background:transparent;
+  color:var(--ink-3);cursor:pointer;display:none;place-items:center
+}
+.search-clear:hover{background:rgba(255,255,255,.08);color:var(--ink)}
+.search-wrap.has-query .search-clear{display:grid}
+#search-results{
+  position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:60;margin:0;padding:6px;
+  list-style:none;max-height:320px;overflow:auto;border-radius:16px;
+  background:rgba(10,14,36,.97);border:1px solid var(--line);box-shadow:0 24px 60px -20px #000;
+  backdrop-filter:blur(18px);
+}
+#search-results[hidden]{display:none}
+#search-results li{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:15px
+}
+#search-results li[aria-selected="true"],#search-results li:hover{background:rgba(0,229,255,.14)}
+#search-results .flag{font-size:19px;line-height:1}
+#search-results .code{margin-left:auto;font-family:var(--font-display);font-size:12px;color:var(--ink-3);letter-spacing:.08em}
+#search-results .empty{color:var(--ink-3);cursor:default;font-size:14px}
+
+/* Header actions --------------------------------------------------------- */
+.topbar-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:12px;
+  border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);
+  font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;
+  transition:transform .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);
+}
+.btn svg{width:16px;height:16px}
+.btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.1);border-color:rgba(0,229,255,.42)}
+.btn:active{transform:translateY(0)}
+.btn--ghost{background:transparent}
+.btn--accent{
+  background:linear-gradient(120deg, rgba(0,229,255,.2), rgba(198,255,61,.16));
+  border-color:rgba(0,229,255,.42);color:#EAFDFF
+}
+.btn--accent:hover{box-shadow:0 0 22px -8px rgba(0,229,255,.8)}
+.icon-btn{
+  width:40px;height:40px;padding:0;justify-content:center;border-radius:12px;
+  border:1px solid var(--line);background:rgba(255,255,255,.05);cursor:pointer;
+  display:inline-grid;place-items:center;color:var(--ink)
+}
+.icon-btn svg{width:17px;height:17px}
+.icon-btn:hover{background:rgba(255,255,255,.11);border-color:rgba(0,229,255,.4)}
+.lang-switch{display:flex;padding:3px;border-radius:12px;background:rgba(6,9,26,.6);border:1px solid var(--line)}
+.lang-switch button{
+  border:0;background:transparent;color:var(--ink-3);font-family:var(--font-display);
+  font-size:12.5px;font-weight:600;letter-spacing:.06em;padding:7px 11px;border-radius:9px;cursor:pointer
+}
+.lang-switch button[aria-pressed="true"]{background:rgba(0,229,255,.18);color:#DDFBFF;box-shadow:inset 0 0 0 1px rgba(0,229,255,.35)}
+
+/* Main layout ------------------------------------------------------------ */
+.main{
+  display:grid;grid-template-columns:minmax(0,1fr) var(--panel-w);
+  gap:16px;padding:14px 16px 10px;min-height:0;
+}
+
+/* Globe stage ------------------------------------------------------------ */
+.stage{
+  position:relative;min-height:0;border-radius:var(--radius-xl);overflow:hidden;
+  border:1px solid rgba(255,255,255,.07);
+  background:radial-gradient(circle at 50% 48%, rgba(0,229,255,.09), transparent 58%),
+             radial-gradient(circle at 50% 50%, #0a0f2c 0%, #06091c 70%);
+  box-shadow:inset 0 0 90px rgba(0,0,0,.6);
+}
+#globe{position:absolute;inset:0}
+#globe canvas{display:block}
+.stage::after{
+  /* faint vignette + orbit ring decoration */
+  content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  box-shadow:inset 0 0 120px 24px rgba(3,5,16,.72);
+}
+.stage-hud{position:absolute;z-index:3;pointer-events:none;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:16px}
+.hud-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.hud-chip{
+  pointer-events:auto;display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:999px;
+  background:rgba(8,12,30,.66);border:1px solid var(--line);font-size:12.5px;color:var(--ink-2);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)
+}
+.hud-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime)}
+.hud-chip .dot[data-offline="true"]{background:var(--orange);box-shadow:0 0 12px var(--orange)}
+.legend{
+  display:flex;flex-direction:column;gap:6px;pointer-events:none;
+  padding:11px 13px;border-radius:14px;background:rgba(7,10,26,.55);border:1px solid var(--line-2);
+  font-size:11.5px;color:var(--ink-3);backdrop-filter:blur(10px)
+}
+.legend strong{color:var(--ink-2);font-weight:600;font-size:11px;letter-spacing:.09em;text-transform:uppercase}
+.legend .row{display:flex;align-items:center;gap:8px}
+.legend .sw{width:11px;height:11px;border-radius:3px}
+.legend .sw--day{background:linear-gradient(135deg,#7fd0ff,#1a6fb5)}
+.legend .sw--night{background:linear-gradient(135deg,#ffd27a,#8a5a12)}
+.legend .sw--hover{background:var(--lime);box-shadow:0 0 10px var(--lime)}
+.hud-hint{
+  align-self:center;pointer-events:none;display:inline-flex;align-items:center;gap:9px;
+  padding:8px 14px;border-radius:999px;background:rgba(7,10,26,.55);border:1px solid var(--line-2);
+  color:var(--ink-3);font-size:12.5px;backdrop-filter:blur(8px);
+  transition:opacity .4s var(--ease)
+}
+.hud-hint svg{width:14px;height:14px}
+.stage.is-engaged .hud-hint{opacity:0}
+
+.globe-tooltip{
+  position:absolute;z-index:20;pointer-events:none;transform:translate(-50%,-140%);
+  padding:7px 12px;border-radius:10px;background:rgba(6,10,26,.94);
+  border:1px solid rgba(198,255,61,.55);color:#F2FFD6;font-size:13px;font-weight:600;
+  box-shadow:0 0 22px -6px rgba(198,255,61,.65);white-space:nowrap;
+  opacity:0;transition:opacity .12s linear
+}
+.globe-tooltip[data-show="true"]{opacity:1}
+
+.globe-loader{
+  position:absolute;inset:0;z-index:10;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 50%, rgba(10,15,44,.86), rgba(4,7,20,.96));
+  transition:opacity .6s var(--ease), visibility .6s
+}
+.globe-loader[data-done="true"]{opacity:0;visibility:hidden;pointer-events:none}
+.loader-inner{display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:24px}
+.loader-orbit{position:relative;width:92px;height:92px}
+.loader-orbit .ring{
+  position:absolute;inset:0;border-radius:50%;border:1px solid rgba(0,229,255,.22);
+  animation:spin 9s linear infinite
+}
+.loader-orbit .ring:nth-child(2){inset:13px;border-color:rgba(255,60,172,.28);animation-duration:6s;animation-direction:reverse}
+.loader-orbit .ring:nth-child(3){inset:26px;border-color:rgba(198,255,61,.3);animation-duration:4s}
+.loader-orbit .ring::before{
+  content:"";position:absolute;top:-3px;left:50%;width:6px;height:6px;margin-left:-3px;border-radius:50%;
+  background:var(--cyan);box-shadow:0 0 12px var(--cyan)
+}
+.loader-orbit .ring:nth-child(2)::before{background:var(--magenta);box-shadow:0 0 12px var(--magenta)}
+.loader-orbit .ring:nth-child(3)::before{background:var(--lime);box-shadow:0 0 12px var(--lime)}
+.loader-core{
+  position:absolute;inset:36px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%, #2fd4ff, #0a3a7a 62%, #06102c);
+  box-shadow:0 0 32px -4px rgba(0,229,255,.7)
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-inner h2{font-size:17px;font-weight:600}
+.loader-inner p{font-size:13.5px;color:var(--ink-3);max-width:280px}
+.loader-bar{width:190px;height:4px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
+.loader-bar span{display:block;height:100%;width:34%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--lime));animation:indet 1.5s ease-in-out infinite}
+@keyframes indet{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+
+/* Info panel ------------------------------------------------------------- */
+.panel{
+  position:relative;min-height:0;display:flex;flex-direction:column;overflow:hidden;
+  border-radius:var(--radius-xl);
+}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px 12px}
+.panel-head h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.panel-head .badge-src{font-size:11px;color:var(--ink-3);display:inline-flex;gap:6px;align-items:center}
+.panel-body{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:0 18px 18px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+.panel-body::-webkit-scrollbar{width:8px}
+.panel-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:99px}
+
+.empty-state{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:44px 20px;color:var(--ink-3)}
+.empty-state .orb{
+  width:74px;height:74px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 34% 30%, rgba(0,229,255,.26), rgba(9,13,36,.2));
+  border:1px solid rgba(0,229,255,.28);color:var(--cyan)
+}
+.empty-state .orb svg{width:30px;height:30px}
+.empty-state h3{font-size:17px;color:var(--ink);font-weight:600}
+.empty-state p{font-size:14.5px;max-width:280px;line-height:1.6}
+.empty-state kbd{font-family:var(--font-display);font-size:11.5px;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.08);border:1px solid var(--line)}
+
+/* Country hero */
+.country-hero{padding:2px 0 14px;border-bottom:1px solid var(--line-2)}
+.country-title{display:flex;align-items:flex-start;gap:13px}
+.country-flag{
+  width:52px;height:52px;flex:0 0 auto;border-radius:14px;display:grid;place-items:center;font-size:30px;
+  background:linear-gradient(150deg, rgba(255,255,255,.12), rgba(255,255,255,.03));
+  border:1px solid var(--line);
+}
+.country-title h3{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.country-title .sub{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:5px;font-size:13px;color:var(--ink-3)}
+.country-title .sub span{display:inline-flex;align-items:center;gap:5px}
+.country-title .sub svg{width:13px;height:13px;opacity:.8}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;
+  font-size:12px;font-weight:500;background:rgba(255,255,255,.06);border:1px solid var(--line-2);color:var(--ink-2)
+}
+.chip--cyan{background:rgba(0,229,255,.12);border-color:rgba(0,229,255,.32);color:#C9F8FF}
+.chip--orange{background:rgba(255,138,0,.12);border-color:rgba(255,138,0,.3);color:#FFDDBB}
+.chip--offline{background:rgba(255,138,0,.16);border-color:rgba(255,138,0,.45);color:#FFE0BC}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.8}
+
+/* Weather block */
+.section-block{padding:15px 0;border-bottom:1px solid var(--line-2)}
+.section-block:last-child{border-bottom:0}
+.block-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}
+.block-head h4{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.block-head .link{
+  background:none;border:0;color:var(--cyan);font-size:13px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;padding:4px 2px;border-radius:6px
+}
+.block-head .link svg{width:13px;height:13px;transition:transform .3s var(--ease)}
+.block-head .link[aria-expanded="true"] svg{transform:rotate(180deg)}
+.weather-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.weather-icon{position:relative;width:64px;height:52px;flex:0 0 auto}
+.weather-temp{font-family:var(--font-display);font-size:38px;font-weight:600;letter-spacing:-.03em;line-height:1}
+.weather-temp sup{font-size:20px;vertical-align:top;margin-left:1px;color:var(--ink-2)}
+.weather-desc{font-size:13px;color:var(--ink-3);margin-top:3px}
+.weather-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+}
+.metric{
+  padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid var(--line-2);
+  min-width:0
+}
+.metric .k{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-3);letter-spacing:.02em}
+.metric .k svg{width:11px;height:11px;opacity:.8}
+.metric .v{font-family:var(--font-display);font-size:16px;font-weight:600;margin-top:2px;white-space:nowrap}
+.metric .v small{font-size:11px;font-weight:400;color:var(--ink-3);margin-left:2px;font-family:var(--font-body)}
+.terrain-summary{
+  margin-top:11px;padding:11px 13px;border-radius:13px;font-size:13.5px;line-height:1.6;color:var(--ink-2);
+  background:linear-gradient(120deg, rgba(255,138,0,.1), rgba(255,194,75,.03));
+  border:1px solid rgba(255,138,0,.18)
+}
+.coords{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.coord{padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid var(--line-2)}
+.coord .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.coord .v{font-family:var(--font-display);font-size:13.5px;margin-top:2px;color:var(--ink)}
+
+/* Expanded details */
+.details{overflow:hidden;transition:max-height .5s var(--ease), opacity .35s var(--ease)}
+.details[data-open="false"]{max-height:0;opacity:0;pointer-events:none}
+.details[data-open="true"]{opacity:1;max-height:2600px}
+.stat-rows{display:grid;gap:8px}
+.stat-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;font-size:13.5px}
+.stat-row .k{color:var(--ink-3);display:flex;align-items:center;gap:7px}
+.stat-row .k i{width:6px;height:6px;border-radius:50%;background:var(--cyan);display:inline-block}
+.stat-row .v{font-family:var(--font-display);font-weight:600;font-size:14.5px;text-align:right}
+.stat-row .v small{color:var(--ink-3);font-weight:400;font-size:11px;font-family:var(--font-body);margin-left:3px}
+.donut-wrap{display:grid;grid-template-columns:128px 1fr;gap:14px;align-items:center}
+.donut-wrap canvas{width:128px;height:128px}
+.legend-list{display:grid;gap:6px;font-size:12.5px}
+.legend-list div{display:flex;align-items:center;gap:8px;color:var(--ink-2)}
+.legend-list .sw{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+.legend-list .pct{margin-left:auto;font-family:var(--font-display);color:var(--ink);font-size:12.5px}
+.chart-wrap{position:relative;width:100%;height:180px}
+.chart-wrap canvas{width:100%;height:100%;display:block}
+.chart-key{display:flex;gap:16px;margin-top:8px;font-size:11.5px;color:var(--ink-3)}
+.chart-key span{display:inline-flex;align-items:center;gap:6px}
+.chart-key i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.forecast{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:4px}
+.fday{
+  text-align:center;padding:9px 4px;border-radius:12px;background:rgba(255,255,255,.04);
+  border:1px solid var(--line-2);min-width:0
+}
+.fday .n{font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+.fday .ic{font-size:17px;line-height:1.5;margin:3px 0}
+.fday .t{font-family:var(--font-display);font-size:12.5px;font-weight:600}
+.fday .t small{display:block;font-weight:400;color:var(--ink-3);font-size:10.5px}
+.fday .p{font-size:10px;color:#8FD8FF;margin-top:2px}
+.koppen-card{
+  display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;
+  background:linear-gradient(120deg, rgba(0,229,255,.09), rgba(255,60,172,.05));
+  border:1px solid rgba(0,229,255,.2)
+}
+.koppen-code{
+  font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:.02em;
+  color:var(--cyan);min-width:52px;text-align:center
+}
+.koppen-card .txt{font-size:13px;color:var(--ink-2);line-height:1.5;min-width:0}
+.koppen-card .txt strong{display:block;font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:2px}
+.sources{display:grid;gap:6px;font-size:12px;color:var(--ink-3);margin-top:10px}
+.sources li{display:flex;gap:8px;align-items:flex-start}
+.sources a{color:var(--ink-2);text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(255,255,255,.25)}
+.sources a:hover{color:var(--cyan)}
+.sources .num{font-family:var(--font-display);font-size:10px;color:var(--cyan);padding-top:2px}
+
+.skeleton{padding:8px 0}
+.sk{height:13px;border-radius:6px;background:linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.13), rgba(255,255,255,.06));background-size:200% 100%;animation:shimmer 1.4s infinite linear;margin-bottom:9px}
+@keyframes shimmer{to{background-position:-200% 0}}
+.sk--sm{width:40%}
+.sk--lg{width:72%;height:26px;margin-bottom:14px}
+.sk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sk-grid .sk{height:52px;margin:0}
+
+.error-card{
+  padding:14px;border-radius:14px;border:1px solid rgba(255,138,0,.4);background:rgba(255,138,0,.09);
+  font-size:13.5px;color:#FFE3C2;display:grid;gap:8px
+}
+.error-card strong{font-size:13.5px}
+.error-card button{justify-self:start}
+
+/* Audio dock ------------------------------------------------------------- */
+.dock{
+  position:relative;display:grid;grid-template-rows:auto minmax(0,1fr);
+  margin:0 16px 8px;border-radius:var(--radius-xl);overflow:hidden;
+  transition:margin .2s var(--ease)
+}
+.dock-head{
+  display:flex;align-items:center;gap:14px;padding:11px 22px 11px 16px;
+  border-bottom:1px solid var(--line-2);
+  background:linear-gradient(120deg, rgba(255,255,255,.04), transparent)
+}
+.dock-title{display:flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:.02em}
+.dock-title svg{width:16px;height:16px;color:var(--cyan)}
+.dock-head .hint{font-size:11.5px;color:var(--ink-3);margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dock-head .hint kbd{font-family:var(--font-display);font-size:10.5px;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--ink-2)}
+.master{display:flex;align-items:center;gap:9px}
+.master label{font-size:11.5px;color:var(--ink-3);letter-spacing:.04em}
+
+/* Mobile quick transport + dock switch ---------------------------------- */
+.where-now{display:none;align-items:center;gap:6px;font-size:11px;color:var(--ink-3);min-width:0}
+.where-now strong{color:var(--ink);font-weight:600;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block}
+.mini-transport{display:none;gap:5px;align-items:center}
+.mini-transport .tbtn{width:34px;height:34px;border-radius:11px;font-family:var(--font-display);font-size:11.5px;font-weight:700}
+.mini-transport .tbtn.is-playing{color:#0B0F2A;background:linear-gradient(140deg,var(--orange),var(--amber));border-color:transparent}
+.mini-transport .tbtn[data-mini="climate"].is-playing{background:linear-gradient(140deg,var(--cyan),#7ADAFF)}
+.dock-toggle{display:none;width:36px;height:36px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.05);place-items:center;cursor:pointer;color:var(--ink-2)}
+.dock-toggle svg{width:16px;height:16px;transition:transform .3s var(--ease)}
+.dock[data-open="true"] .dock-toggle svg{transform:rotate(180deg)}
+.stage-credit{position:absolute;z-index:3;right:12px;bottom:10px;max-width:min(560px,72%);font-size:10px;line-height:1.5;color:rgba(152,163,199,.72);text-align:right;pointer-events:none}
+.tracks{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 16px 16px;min-height:0}
+.track{
+  --accent:var(--orange);
+  --accent-2:var(--amber);
+  position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;
+  padding:12px 14px 11px;border-radius:18px;min-width:0;
+  background:linear-gradient(150deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+  border:1px solid var(--line-2);
+  transition:border-color .2s var(--ease), box-shadow .2s var(--ease), background .2s var(--ease)
+}
+.track::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%);
+  opacity:.75
+}
+.track[data-track="climate"]{--accent:var(--cyan);--accent-2:#7ADAFF}
+.track[data-active="true"]{
+  border-color:color-mix(in srgb, var(--accent) 62%, transparent);
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),0 18px 44px -26px color-mix(in srgb, var(--accent) 80%, transparent)
+}
+.track-main{min-width:0;position:relative}
+.track-head{display:flex;align-items:center;gap:10px;min-width:0}
+.track-badge{
+  width:26px;height:26px;flex:0 0 auto;border-radius:9px;display:grid;place-items:center;
+  font-family:var(--font-display);font-size:12.5px;font-weight:700;color:#120A03;
+  background:linear-gradient(140deg,var(--accent),var(--accent-2));
+  box-shadow:0 0 18px -6px var(--accent)
+}
+.track[data-track="climate"] .track-badge{color:#031219}
+.track-head h3{font-size:14.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-head .sub{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track-state{
+  margin-left:auto;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  padding:3px 7px;border-radius:999px;border:1px solid var(--line-2);white-space:nowrap;flex:0 0 auto
+}
+.track[data-playing="true"] .track-state{color:var(--accent);border-color:color-mix(in srgb, var(--accent) 45%, transparent)}
+.viz{
+  width:100%;height:34px;display:block;margin:6px 0 2px;border-radius:6px;
+  background:linear-gradient(180deg, rgba(0,0,0,.18), transparent 65%)
+}
+.transport{display:flex;align-items:center;gap:5px}
+.tbtn{
+  width:32px;height:32px;flex:0 0 auto;border-radius:10px;border:1px solid var(--line-2);
+  background:rgba(255,255,255,.05);display:grid;place-items:center;cursor:pointer;color:var(--ink-2);
+  transition:background .15s var(--ease), color .15s var(--ease), transform .15s var(--ease), border-color .15s
+}
+.tbtn svg{width:15px;height:15px}
+.tbtn:hover{background:rgba(255,255,255,.12);color:var(--ink);border-color:rgba(255,255,255,.22)}
+.tbtn:active{transform:scale(.94)}
+.tbtn[disabled]{opacity:.35;cursor:not-allowed}
+.tbtn--play{
+  width:38px;height:38px;border-radius:12px;color:#0B0F2A;
+  background:linear-gradient(140deg,var(--accent),var(--accent-2));border:0;
+  box-shadow:0 6px 20px -8px var(--accent)
+}
+.track[data-track="climate"] .tbtn--play{color:#04151b}
+.tbtn--play:hover{filter:brightness(1.08);background:linear-gradient(140deg,var(--accent),var(--accent-2))}
+.progress-row{display:flex;align-items:center;gap:9px;margin-top:9px}
+.time{font-family:var(--font-display);font-size:11px;color:var(--ink-3);letter-spacing:.02em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.range{
+  -webkit-appearance:none;appearance:none;height:4px;border-radius:99px;flex:1 1 auto;min-width:0;
+  background:linear-gradient(90deg,var(--accent) 0%, var(--accent) var(--fill,0%), rgba(255,255,255,.13) var(--fill,0%));
+  cursor:pointer;outline:none
+}
+.range::-webkit-slider-thumb{
+  -webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#fff;border:2px solid var(--accent);
+  box-shadow:0 0 12px color-mix(in srgb, var(--accent) 80%, transparent);cursor:grab
+}
+.range::-moz-range-thumb{width:13px;height:13px;border:2px solid var(--accent);border-radius:50%;background:#fff}
+.range:focus-visible{box-shadow:0 0 0 3px rgba(0,229,255,.28)}
+.vol-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.vol-row .range{max-width:120px}
+.vol-val{font-family:var(--font-display);font-size:11px;color:var(--ink-3);width:34px;text-align:right}
+.tbtn--small{width:28px;height:28px;border-radius:9px}
+.tbtn--small svg{width:14px;height:14px}
+.track .track-aside{display:flex;flex-direction:column;justify-content:center;gap:6px;align-items:flex-end}
+.track-src{font-size:10px;color:var(--ink-3);text-align:right;max-width:110px;line-height:1.4}
+.dock-collapse{
+  position:absolute;right:14px;top:-1px;transform:translateY(-100%);display:none
+}
+.dock-empty{
+  display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-3);padding:0 4px
+}
+
+/* Toast ------------------------------------------------------------------ */
+.toasts{position:fixed;z-index:120;left:50%;bottom:18px;transform:translateX(-50%);display:grid;gap:8px;width:min(440px,calc(100vw - 32px))}
+.toast{
+  display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;
+  background:rgba(12,17,42,.96);border:1px solid var(--line);font-size:13.5px;color:var(--ink-2);
+  box-shadow:0 20px 50px -18px #000;animation:toastIn .3s var(--ease)
+}
+.toast svg{width:16px;height:16px;flex:0 0 auto;margin-top:2px;color:var(--orange)}
+.toast[data-kind="ok"] svg{color:var(--lime)}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* Modal / onboarding ----------------------------------------------------- */
+.modal{
+  position:fixed;inset:0;z-index:150;display:grid;place-items:center;padding:20px;
+  background:rgba(4,6,18,.72);backdrop-filter:blur(10px);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .3s var(--ease), visibility 0s linear .3s
+}
+.modal[data-open="true"]{opacity:1;visibility:visible;pointer-events:auto;
+  transition:opacity .3s var(--ease), visibility 0s}
+.modal-card{
+  width:min(660px,100%);max-height:min(88dvh,720px);overflow:auto;padding:26px 26px 22px;border-radius:28px;
+  background:linear-gradient(160deg, rgba(26,23,66,.97), rgba(10,13,34,.98));
+  border:1px solid rgba(0,229,255,.22);box-shadow:0 40px 100px -30px #000, 0 0 80px -40px var(--cyan);
+  transform:translateY(14px) scale(.985);transition:transform .35s var(--ease)
+}
+.modal[data-open="true"] .modal-card{transform:none}
+.modal-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);font-weight:600}
+.modal-card h2{font-size:27px;margin:8px 0 8px;letter-spacing:-.025em}
+.modal-card .lead{font-size:15px;color:var(--ink-2);line-height:1.65;max-width:52ch}
+.steps{display:grid;gap:10px;margin:18px 0 14px}
+.step{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid var(--line-2)}
+.step .n{
+  width:26px;height:26px;flex:0 0 auto;border-radius:9px;display:grid;place-items:center;
+  font-family:var(--font-display);font-size:12.5px;font-weight:700;color:#04121a;
+  background:linear-gradient(140deg,var(--cyan),var(--lime))
+}
+.step strong{display:block;font-size:14px;margin-bottom:2px}
+.step p{font-size:13px;color:var(--ink-3);line-height:1.55}
+.modal-note{
+  display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:13px;font-size:12.5px;line-height:1.55;
+  background:rgba(255,138,0,.1);border:1px solid rgba(255,138,0,.28);color:#FFDFC0
+}
+.modal-note svg{width:15px;height:15px;flex:0 0 auto;margin-top:2px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.modal-actions .btn{height:44px;padding:0 20px}
+.btn--primary{
+  background:linear-gradient(120deg,var(--cyan),#5be6ff 60%,var(--lime));
+  color:#04121a;border:0;font-weight:700;
+  box-shadow:0 10px 30px -12px rgba(0,229,255,.85)
+}
+.btn--primary:hover{filter:brightness(1.06);background:linear-gradient(120deg,var(--cyan),#5be6ff 60%,var(--lime))}
+
+/* Weather icon animation ------------------------------------------------- */
+.wi{position:absolute;inset:0}
+.wi-sun{
+  position:absolute;left:6px;top:2px;width:30px;height:30px;border-radius:50%;
+  background:radial-gradient(circle at 36% 34%, #FFF3B0, #FFC24B 58%, #FF8A00);
+  box-shadow:0 0 22px rgba(255,194,75,.75);animation:sunPulse 4.5s ease-in-out infinite
+}
+@keyframes sunPulse{0%,100%{transform:scale(1);box-shadow:0 0 20px rgba(255,194,75,.6)}50%{transform:scale(1.06);box-shadow:0 0 30px rgba(255,194,75,.9)}}
+.wi-moon{
+  position:absolute;left:8px;top:2px;width:28px;height:28px;border-radius:50%;
+  background:radial-gradient(circle at 36% 34%, #E8F6FF, #A9C7E8 62%, #6E8EB8);
+  box-shadow:0 0 20px rgba(160,205,255,.5), inset -7px -3px 0 rgba(8,12,30,.9)
+}
+.wi-cloud{
+  position:absolute;left:18px;bottom:6px;width:40px;height:16px;border-radius:99px;background:rgba(226,240,255,.92);
+  box-shadow:0 0 16px rgba(180,220,255,.35);animation:cloudDrift 7s ease-in-out infinite
+}
+.wi-cloud::before,.wi-cloud::after{content:"";position:absolute;border-radius:50%;background:inherit}
+.wi-cloud::before{width:19px;height:19px;left:5px;top:-9px}
+.wi-cloud::after{width:14px;height:14px;right:5px;top:-6px;opacity:.92}
+.wi-cloud--dim{opacity:.55}
+@keyframes cloudDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+.wi-rain{position:absolute;left:20px;bottom:0;width:36px;height:14px;overflow:hidden}
+.wi-rain i{position:absolute;width:2px;height:9px;border-radius:2px;background:linear-gradient(180deg,transparent,#7CD7FF);animation:rainFall .9s linear infinite}
+.wi-rain i:nth-child(1){left:4px;animation-delay:0s}
+.wi-rain i:nth-child(2){left:14px;animation-delay:.28s}
+.wi-rain i:nth-child(3){left:24px;animation-delay:.55s}
+@keyframes rainFall{from{transform:translateY(-10px);opacity:0}30%{opacity:1}to{transform:translateY(14px);opacity:0}}
+.wi-bolt{position:absolute;left:30px;bottom:8px;width:10px;height:18px;color:#FFE27A;animation:bolt 2.6s steps(1) infinite}
+@keyframes bolt{0%,92%,100%{opacity:0}94%,98%{opacity:1}}
+.wi-snow{position:absolute;left:22px;bottom:2px;width:34px;height:16px}
+.wi-snow i{position:absolute;width:3px;height:3px;border-radius:50%;background:#EAF7FF;animation:rainFall 2.2s linear infinite}
+.wi-snow i:nth-child(2){left:12px;animation-delay:.7s}
+.wi-snow i:nth-child(3){left:25px;animation-delay:1.3s}
+
+/* Panel mobile sheet handle ---------------------------------------------- */
+.sheet-handle{display:none}
+
+/* Responsive ------------------------------------------------------------- */
+@media (max-width:1240px){
+  :root{--panel-w:356px}
+  .dock-head .hint{display:none}
+  .brand p{display:none}
+}
+@media (max-width:1080px){
+  .topbar{gap:12px;padding:0 14px}
+  .brand h1{font-size:17px}
+  #search{height:40px}
+  .btn span{display:none}
+  .btn--accent span{display:inline}
+  .btn{padding:0 11px}
+  .main{grid-template-columns:minmax(0,1fr) 330px;padding:12px}
+  .dock{margin:0 12px 12px}
+  .tracks{padding:10px 12px 12px;gap:10px}
+  .track{padding:10px 12px}
+  .track-head h3{font-size:13.5px}
+  .track .track-aside{display:none}
+}
+@media (max-width:900px){
+  .track .viz{height:26px}
+  .track-head .sub{display:none}
+  .track-badge{width:24px;height:24px;font-size:11.5px}
+  .tbtn{width:30px;height:30px}
+  .tbtn--play{width:34px;height:34px}
+}
+
+/* Mobile: globe above, info panel as draggable bottom sheet */
+@media (max-width:860px){
+  body{overflow:hidden}
+  :root{--header-h:64px}
+  .app{grid-template-rows:var(--header-h) minmax(0,1fr) 0}
+  .topbar{padding:0 12px;gap:10px;min-width:0}
+  .search-wrap{min-width:0;flex:1 1 auto}
+  .topbar-actions{flex:0 0 auto;gap:6px}
+  .brand-mark{width:36px;height:36px;border-radius:12px}
+  .brand-mark svg{width:19px;height:19px}
+  .brand h1{font-size:15.5px}
+  .brand-text{display:none}
+  .brand{gap:8px}
+  .search-wrap{max-width:none}
+  #search{height:38px;font-size:14px;padding-left:36px}
+  #search::placeholder{font-size:13.5px}
+  .search-box svg{left:12px;width:15px;height:15px}
+  .topbar-actions{gap:6px}
+  .icon-btn{width:36px;height:36px}
+  .btn{height:36px}
+  .btn--accent span{display:none}
+  .lang-switch button{padding:6px 8px;font-size:11.5px}
+  .main{
+    display:block;padding:0;position:relative;
+    height:calc(100dvh - var(--header-h));
+  }
+  .stage{
+    position:absolute;inset:0;border-radius:0;border:0;
+    height:calc(100dvh - var(--header-h));
+  }
+  .stage-hud{padding:12px}
+  .legend{display:none}
+  .hud-chip{font-size:11.5px;padding:6px 10px}
+  .globe-loader h2{font-size:16px}
+  .panel{
+    position:fixed;z-index:40;left:8px;right:8px;bottom:calc(68px + env(safe-area-inset-bottom,0px));
+    max-height:76dvh;border-radius:24px;
+    transform:translateY(0);
+    transition:transform .42s var(--ease), opacity .25s var(--ease), visibility .25s;
+    will-change:transform;
+    box-shadow:0 -10px 50px -18px #000;
+  }
+  body.dock-open .panel{opacity:0;visibility:hidden;pointer-events:none}
+  .panel[data-sheet="peek"]{transform:translateY(calc(100% - 168px))}
+  .panel[data-sheet="mid"]{transform:translateY(calc(100% - 46dvh))}
+  .panel[data-sheet="full"]{transform:translateY(0)}
+  .panel-head{padding:8px 16px 6px;flex-direction:column;align-items:stretch;gap:6px}
+  .panel-head .panel-eyebrow{display:none}
+  .sheet-handle{
+    display:block;width:100%;height:22px;border:0;background:transparent;cursor:grab;padding:0;
+    position:relative;touch-action:none
+  }
+  .sheet-handle::after{
+    content:"";position:absolute;left:50%;top:8px;transform:translateX(-50%);
+    width:44px;height:5px;border-radius:99px;background:rgba(255,255,255,.28)
+  }
+  .panel-body{padding:0 16px 22px;max-height:calc(76dvh - 60px)}
+  .panel:not(.has-country) .panel-head{flex-direction:row}
+  .panel:not(.has-country){transform:translateY(0);max-height:210px}
+  .panel:not(.has-country) .panel-body{padding-bottom:14px}
+  .panel:not(.has-country) .empty-state{padding:14px 10px 20px;flex-direction:row;text-align:left;gap:12px}
+  .panel:not(.has-country) .empty-state .orb{width:46px;height:46px}
+  .panel:not(.has-country) .empty-state .orb svg{width:20px;height:20px}
+  .panel:not(.has-country) .empty-state h3{font-size:15px}
+  .panel:not(.has-country) .empty-state p{font-size:12.5px;max-width:none}
+  .panel:not(.has-country) .empty-state p.extra{display:none}
+  .dock{
+    position:fixed;z-index:50;left:0;right:0;bottom:46px;margin:0;
+    border-radius:20px 20px 0 0;border-bottom:0;
+    background:linear-gradient(180deg, rgba(17,21,50,.96), rgba(8,11,28,.99));
+    padding-bottom:0;
+    max-height:calc(76dvh);transition:max-height .4s var(--ease)
+  }
+  .app .labbar{
+    position:fixed;z-index:55;left:0;right:0;bottom:0;margin:0;
+    border-radius:16px 16px 0 0;border-bottom:0;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    background:linear-gradient(180deg, rgba(20,25,56,.98), rgba(9,12,30,.99));
+    box-shadow:0 -14px 36px -22px #000
+  }
+  .app .labbar.is-open .lab-body{max-height:min(58dvh,520px)}
+  .labbar-toggle{padding:9px 14px}
+  .dock[data-open="false"]{max-height:60px}
+  .dock[data-open="false"] .tracks{display:none}
+  .dock[data-open="false"] .dock-head{border-bottom:0}
+  .dock[data-open="true"] .mini-transport{display:none}
+  .mini-transport{display:flex}
+  .dock-toggle{display:grid}
+  .where-now{display:inline-flex}
+  .dock-title span{display:none}
+  #master-vol{max-width:54px}
+  .stage-credit{display:none}
+  .dock-head{gap:8px}
+  .dock-head{padding:8px 14px;gap:10px}
+  #spatial-toggle span{display:none}
+  #spatial-toggle{padding:8px;min-width:36px;justify-content:center}
+  .lab-hint{display:none}
+  .dock-title{font-size:12px}
+  .dock-head .master{margin-left:auto}
+  .where-now{
+    display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-3);min-width:0
+  }
+  .where-now strong{
+    color:var(--ink);font-weight:600;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block
+  }
+  .tracks{
+    display:flex;flex-direction:column;gap:8px;padding:6px 10px 10px;
+    max-height:calc(76dvh - 54px);overflow-y:auto
+  }
+  .track{padding:9px 11px;border-radius:15px}
+  .track .viz{height:22px;margin:3px 0 0}
+  .track-head .sub{display:none}
+  .track .progress-row{margin-top:6px}
+  .track .vol-row{margin-top:5px}
+  .track .track-aside{display:none}
+  .track-state{font-size:9px;padding:2px 6px}
+  .tbtn{width:30px;height:30px;border-radius:9px}
+  .tbtn--play{width:34px;height:34px}
+  .tbtn--small{width:26px;height:26px}
+  .vol-row .range{max-width:86px}
+  .toasts{bottom:calc(128px + env(safe-area-inset-bottom,0px))}
+  .modal-card{padding:20px;border-radius:22px;max-height:90dvh}
+  .modal-card h2{font-size:22px}
+  .modal-card .lead{font-size:14px}
+  .steps{gap:8px}
+  .step{padding:10px 12px}
+  .step p{font-size:12px}
+  .modal-actions .btn{flex:1 1 auto;justify-content:center}
+  .donut-wrap{grid-template-columns:106px 1fr;gap:10px}
+  .donut-wrap canvas{width:106px;height:106px}
+  .weather-grid{grid-template-columns:repeat(3,1fr)}
+  .country-title h3{font-size:21px}
+  .forecast{gap:4px}
+  .fday{padding:7px 2px}
+  .forecast{grid-template-columns:repeat(7,1fr)}
+}
+@media (max-width:400px){
+  .brand{display:none}
+  #random-btn{display:none}
+  .forecast{grid-template-columns:repeat(4,1fr);row-gap:5px}
+  .weather-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+  .loader-bar span{width:100%}
+}
+/* Sound lab — thanh riêng dưới dock */
+.labbar{margin:0 16px 14px;border-radius:var(--radius-xl);overflow:hidden;flex:none}
+.labbar-toggle{
+  display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;
+  color:var(--ink-2);font:inherit;font-size:12px;padding:10px 14px;cursor:pointer;text-align:left
+}
+.labbar-toggle > svg:first-child{width:15px;height:15px;color:var(--cyan);flex:none}
+.labbar-toggle .chev{width:16px;height:16px;margin-left:4px;transition:transform .3s var(--ease);transform:rotate(180deg)}
+.labbar.is-open .labbar-toggle .chev{transform:rotate(0)}
+.labbar-toggle:focus-visible{outline:2px solid var(--cyan);outline-offset:-3px}
+.labbar-toggle .lab-hint{margin-left:auto}
+.lab-hint{font-size:10.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lab-body{
+  padding:0 14px;display:grid;gap:9px;
+  max-height:0;opacity:0;overflow:hidden;
+  transition:max-height .35s var(--ease), opacity .25s, padding .35s var(--ease)
+}
+.labbar.is-open .lab-body{max-height:min(46dvh,460px);padding:2px 14px 12px;opacity:1;overflow-y:auto}
+.lab-fields{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.lab-field{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.lab-field select{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:inherit;font-size:11.5px;padding:4px 6px;text-transform:none;letter-spacing:0}
+.lab-field .range{width:110px}
+.lab-field output{font-family:var(--font-display);font-size:11px;color:var(--cyan);min-width:38px;text-align:right}
+.lab-layers{display:flex;flex-wrap:wrap;gap:6px 14px}
+.lab-check{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-2);cursor:pointer;min-height:26px}
+.lab-check input{width:14px;height:14px;accent-color:var(--cyan)}
+.lab-select{font:inherit;font-size:11px;color:var(--ink-2);background:rgba(9,17,27,.55);border:1px solid var(--line);border-radius:6px;padding:2px 4px;min-height:24px}
+.lab-layer-status{font-size:10.5px;line-height:1.5;color:var(--ink-3);margin:0;min-height:0}
+.lab-layer-status:empty{display:none}
+.lab-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.btn--compact{height:30px;padding:0 11px;font-size:12px;gap:7px;border-radius:9px;white-space:nowrap}
+.dock-head .master{flex:none}
+.lab-status{font-size:11px;color:var(--cyan)}
+
+/* Compare CTA in panel chips */
+.chip--action{cursor:pointer;font:inherit;font-size:11px;letter-spacing:.01em;color:var(--ink-2);background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:999px;padding:5px 11px;min-height:28px}
+.chip--action:hover{color:var(--cyan);border-color:rgba(0,229,255,.4)}
+.chip--action:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.chip--action[aria-pressed="true"]{color:var(--cyan);border-color:rgba(0,229,255,.5);background:rgba(0,229,255,.08)}
+#compare-chip[hidden]{display:none}
+
+/* Season slider for climate track */
+.season-row{display:flex;align-items:center;gap:8px;margin-top:7px}
+.season-row label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+.season-row .range{flex:1;min-width:60px}
+.season-row output{min-width:56px;text-align:right;font-family:var(--font-display);font-size:11px;font-weight:600;color:var(--cyan);white-space:nowrap}
+.season-row input:disabled{opacity:.45;cursor:not-allowed}
+
+/* High contrast / forced colors safety */
+@media (forced-colors:active){
+  .glass,.track,.panel,.dock{border:1px solid CanvasText}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Bỏ qua và tới nội dung chính</a>
+<canvas id="starfield" aria-hidden="true"></canvas>
+<div class="aurora" aria-hidden="true"></div>
+
+<!-- SVG sprite: all UI icons live here so buttons stay accessible & crisp -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.4 4 5.6 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.6-4-9s1.4-6.6 4-9Z" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M4 7h3l3 5m0 0 3 5h3m0 0-2.5-2.5M16 17l2.5-2.5M4 17h3l2.2-3.6M15 7h4m0 0-2.5-2.5M19 7l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5M6.5 10v9h11v-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1.1.9-1.1 1.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5 19 12 8 18.5Z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="7" y="5" width="3.6" height="14" rx="1.2" fill="currentColor"/><rect x="13.4" y="5" width="3.6" height="14" rx="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor"/></symbol>
+  <symbol id="i-back10" viewBox="0 0 24 24"><path d="M4.5 10.5A7.5 7.5 0 1 1 6 16.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 5v6h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><text x="9" y="16.4" font-size="6.5" font-family="Space Grotesk,sans-serif" fill="currentColor">10</text></symbol>
+  <symbol id="i-fwd10" viewBox="0 0 24 24"><path d="M19.5 10.5A7.5 7.5 0 1 0 18 16.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M20 5v6h-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><text x="9" y="16.4" font-size="6.5" font-family="Space Grotesk,sans-serif" fill="currentColor">10</text></symbol>
+  <symbol id="i-restart" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.3-5.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 4.5V10h5.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9.5h3L11 6v12L7 14.5H4Z" fill="currentColor"/><path d="M14.5 9a4 4 0 0 1 0 6M17 6.6a7.5 7.5 0 0 1 0 10.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3L11 6v12L7 14.5H4Z" fill="currentColor"/><path d="m15 9.5 5 5m0-5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6.5-6 6.5-11a6.5 6.5 0 1 0-13 0C5.5 15 12 21 12 21Z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="10" r="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-wind" viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a2.5 2.5 0 1 1-2.5 2.5M3 16h7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3.5S6 10 6 14a6 6 0 0 0 12 0c0-4-6-10.5-6-10.5Z" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+  <symbol id="i-humidity" viewBox="0 0 24 24"><path d="M12 3.5S6.5 10 6.5 13.7a5.5 5.5 0 0 0 11 0C17.5 10 12 3.5 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9.5 14.5a2.6 2.6 0 0 0 2.6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-uv" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.6-8A5.5 5.5 0 0 1 17 10.2 3.9 3.9 0 0 1 17 18Z" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+  <symbol id="i-mountain" viewBox="0 0 24 24"><path d="M3 19h18L14.5 6.5 11.5 12l-2-3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 2.5v2M14 2.5v2M10 19.5v2M14 19.5v2M2.5 10h2M2.5 14h2M19.5 10h2M19.5 14h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 10.5V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M2.5 12h2l2-6 3 12 3-16 3 20 2.5-10h3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.8 4.8l1.8 1.8M17.4 17.4l1.8 1.8M19.2 4.8l-1.8 1.8M6.6 17.4l-1.8 1.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9.5h3L11 6v12L7 14.5H4Z" fill="currentColor"/><path d="M14.5 9a4 4 0 0 1 0 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-drag" viewBox="0 0 24 24"><path d="M8 8h.01M16 8h.01M8 12h.01M16 12h.01M8 16h.01M16 16h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+</svg>
+
+<div class="app">
+  <!-- ================= HEADER ================= -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><svg><use href="#i-globe"/></svg></div>
+      <div class="brand-text">
+        <h1><span class="accent">Lắng nghe</span> Trái Đất</h1>
+        <p>Earth Listens · Space Apps</p>
+      </div>
+    </div>
+
+    <div class="search-wrap" id="search-wrap" role="search">
+      <div class="search-box">
+        <svg aria-hidden="true"><use href="#i-search"/></svg>
+        <label class="sr-only" for="search" data-i18n="searchLabel">Tìm quốc gia hoặc lãnh thổ</label>
+        <input id="search" type="text" autocomplete="off" spellcheck="false"
+               placeholder="Tìm quốc gia… (vd: Việt Nam, Nhật, Kenya)"
+               role="combobox" aria-autocomplete="list" aria-expanded="false"
+               aria-controls="search-results" data-i18n-attr="placeholder:searchPlaceholder" />
+        <button class="search-clear" id="search-clear" type="button" aria-label="Xoá tìm kiếm" data-i18n-attr="aria-label:clearSearch">
+          <svg aria-hidden="true" style="position:static;width:14px;height:14px"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <ul id="search-results" role="listbox" aria-label="Kết quả tìm kiếm quốc gia" hidden></ul>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="btn btn--ghost" id="random-btn" type="button" title="Bay tới một quốc gia ngẫu nhiên">
+        <svg aria-hidden="true"><use href="#i-shuffle"/></svg>
+        <span data-i18n="random">Khám phá ngẫu nhiên</span>
+      </button>
+      <button class="btn btn--ghost" id="reset-btn" type="button" title="Trở về góc nhìn mặc định">
+        <svg aria-hidden="true"><use href="#i-home"/></svg>
+        <span data-i18n="resetView">Vị trí ban đầu</span>
+      </button>
+      <div class="lang-switch" role="group" aria-label="Ngôn ngữ / Language">
+        <button type="button" data-lang="vi" aria-pressed="true" lang="vi">VI</button>
+        <button type="button" data-lang="en" aria-pressed="false" lang="en">EN</button>
+      </div>
+      <button class="icon-btn" id="help-btn" type="button" aria-label="Hướng dẫn sử dụng" data-i18n-attr="aria-label:helpAria">
+        <svg aria-hidden="true"><use href="#i-help"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main" id="main">
+    <section class="stage" id="stage" aria-label="Quả địa cầu 3D tương tác" data-i18n-attr="aria-label:globeAria">
+      <div id="globe"></div>
+
+      <div class="stage-hud">
+        <div class="hud-top">
+          <div class="hud-chip" id="status-chip">
+            <span class="dot" id="status-dot" aria-hidden="true"></span>
+            <span id="status-text">Đang tải dữ liệu Trái Đất…</span>
+          </div>
+          <div class="legend" aria-hidden="true">
+            <strong data-i18n="legendTitle">Chú giải</strong>
+            <div class="row"><span class="sw sw--day"></span><span data-i18n="legendDay">Ban ngày</span></div>
+            <div class="row"><span class="sw sw--night"></span><span data-i18n="legendNight">Đèn đêm</span></div>
+            <div class="row"><span class="sw sw--hover"></span><span data-i18n="legendHover">Quốc gia đang trỏ</span></div>
+          </div>
+        </div>
+        <div class="hud-hint" id="hud-hint">
+          <svg aria-hidden="true"><use href="#i-drag"/></svg>
+          <span data-i18n="dragHint">Kéo để xoay · cuộn để thu phóng · chạm để chọn quốc gia</span>
+        </div>
+      </div>
+
+      <div class="globe-tooltip" id="globe-tooltip" role="tooltip" aria-hidden="true"></div>
+
+      <div class="globe-loader" id="globe-loader" data-done="false" role="status" aria-live="polite">
+        <div class="loader-inner">
+          <div class="loader-orbit" aria-hidden="true">
+            <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+            <div class="loader-core"></div>
+          </div>
+          <h2 data-i18n="loadingTitle">Đang lắp ráp Trái Đất</h2>
+          <p id="loader-message" data-i18n="loadingBody">Tải ảnh vệ tinh NASA · ranh giới Natural Earth · dữ liệu thời tiết Open-Meteo…</p>
+          <div class="loader-bar" aria-hidden="true"><span></span></div>
+        </div>
+      </div>
+
+      <p class="stage-credit">
+        <span data-i18n="creditShort">Ảnh vệ tinh NASA Blue/Black Marble · ETOPO · Natural Earth · Open-Meteo · NASA POWER</span>
+      </p>
+    </section>
+
+    <!-- ================= INFO PANEL ================= -->
+    <aside class="panel glass" id="info-panel" aria-label="Thông tin quốc gia" data-i18n-attr="aria-label:panelAria">
+      <button class="sheet-handle" id="sheet-handle" type="button" aria-label="Kéo để mở hoặc thu gọn bảng thông tin" data-i18n-attr="aria-label:sheetHandle"></button>
+      <div class="panel-head">
+        <h2 class="panel-eyebrow" data-i18n="panelTitle">Hồ sơ Trái Đất</h2>
+        <span class="badge-src" id="panel-badge">
+          <svg aria-hidden="true" width="12" height="12"><use href="#i-globe"/></svg>
+          <span data-i18n="panelSub">Chọn một quốc gia trên địa cầu</span>
+        </span>
+      </div>
+      <div class="panel-body" id="panel-body">
+        <div class="empty-state" id="empty-state">
+          <div class="orb" aria-hidden="true"><svg><use href="#i-pin"/></svg></div>
+          <h3 data-i18n="emptyTitle">Trái Đất đang chờ bạn lắng nghe</h3>
+          <p data-i18n="emptyBody">Xoay quả địa cầu, tìm một quốc gia rồi nhấn vào để nghe địa hình và khí hậu của nơi đó.</p>
+          <p class="extra" data-i18n="emptyExtra">Mẹo: dùng phím <kbd>/</kbd> để tìm nhanh, hoặc nút “Khám phá ngẫu nhiên”.</p>
+        </div>
+        <div id="panel-content" hidden></div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ================= AUDIO DOCK ================= -->
+  <footer class="dock glass" id="dock" data-open="false" aria-label="Bảng điều khiển âm thanh" data-i18n-attr="aria-label:dockAria">
+    <div class="dock-head">
+      <div class="dock-title"><svg aria-hidden="true"><use href="#i-wave"/></svg><span data-i18n="audioTitle">Phòng nghe Trái Đất</span></div>
+      <span class="where-now" id="dock-now"></span>
+      <div class="mini-transport" id="mini-transport" role="group" aria-label="Điều khiển nhanh hai track" data-i18n-attr="aria-label:miniTransportAria">
+        <button type="button" class="tbtn" data-mini="terrain" aria-label="A · địa hình" title="A · địa hình">A</button>
+        <button type="button" class="tbtn" data-mini="climate" aria-label="B · khí hậu" title="B · khí hậu">B</button>
+      </div>
+      <div class="dock-head hint" aria-hidden="true">
+        <span><kbd>Space</kbd> <span data-i18n="keyPlay">phát/dừng</span></span>
+        <span><kbd>←</kbd><kbd>→</kbd> <span data-i18n="keySeek">tua 10s</span></span>
+        <span><kbd>↑</kbd><kbd>↓</kbd> <span data-i18n="keyVol">âm lượng</span></span>
+      </div>
+      <button class="btn btn--ghost btn--compact" id="spatial-toggle" type="button" aria-pressed="false" aria-label="Bật hoặc tắt âm thanh không gian theo hướng địa điểm" data-i18n-attr="aria-label:spatialAria" title="Âm thanh không gian">
+        <svg aria-hidden="true"><use href="#i-globe"/></svg><span data-i18n="spatial">Không gian</span>
+      </button>
+      <div class="master">
+        <label for="master-vol" data-i18n="masterVol">Tổng</label>
+        <input id="master-vol" class="range" type="range" min="0" max="100" value="85" aria-label="Âm lượng tổng" />
+        <button class="tbtn tbtn--small" id="master-mute" type="button" aria-pressed="false" aria-label="Tắt tiếng toàn bộ" data-i18n-attr="aria-label:masterMute">
+          <svg aria-hidden="true"><use href="#i-vol"/></svg>
+        </button>
+      </div>
+      <button class="dock-toggle" id="dock-toggle" type="button" aria-expanded="false" aria-label="Mở bảng điều khiển âm thanh" data-i18n-attr="aria-label:dockToggleAria">
+        <svg aria-hidden="true"><use href="#i-chev"/></svg>
+      </button>
+    </div>
+
+    <div class="tracks" id="tracks">
+      <!-- Track A: terrain -->
+      <article class="track" data-track="terrain" aria-labelledby="track-a-title">
+        <div class="track-main">
+          <div class="track-head">
+            <span class="track-badge" aria-hidden="true">A</span>
+            <div style="min-width:0">
+              <h3 id="track-a-title" data-i18n="trackTerrain">Âm thanh địa hình</h3>
+              <div class="sub" data-i18n="trackTerrainSub">Độ cao · độ gồ ghề · rừng · biển · sông</div>
+            </div>
+            <span class="track-state" data-state-label data-i18n="stateIdle">Chờ chọn</span>
+          </div>
+          <canvas class="viz" data-viz="terrain" width="600" height="68" aria-hidden="true"></canvas>
+          <div class="transport" role="group" aria-label="Điều khiển track địa hình" data-i18n-attr="aria-label:transportTerrain">
+            <button class="tbtn" type="button" data-act="restart" aria-label="Phát lại từ đầu" data-i18n-attr="aria-label:restart"><svg><use href="#i-restart"/></svg></button>
+            <button class="tbtn" type="button" data-act="back" aria-label="Tua lại 10 giây" data-i18n-attr="aria-label:back"><svg><use href="#i-back10"/></svg></button>
+            <button class="tbtn tbtn--play" type="button" data-act="toggle" aria-label="Phát" data-i18n-attr="aria-label:play"><svg><use href="#i-play"/></svg></button>
+            <button class="tbtn" type="button" data-act="fwd" aria-label="Tua tới 10 giây" data-i18n-attr="aria-label:fwd"><svg><use href="#i-fwd10"/></svg></button>
+            <button class="tbtn" type="button" data-act="stop" aria-label="Dừng hẳn" data-i18n-attr="aria-label:stop"><svg><use href="#i-stop"/></svg></button>
+          </div>
+          <div class="progress-row">
+            <input class="range seek" type="range" min="0" max="60" step="0.1" value="0" aria-label="Tiến trình track địa hình" data-i18n-attr="aria-label:seekTerrain" />
+            <span class="time" data-time>0:00 / 1:00</span>
+          </div>
+          <div class="vol-row">
+            <button class="tbtn tbtn--small" type="button" data-act="mute" aria-pressed="false" aria-label="Tắt tiếng track địa hình" data-i18n-attr="aria-label:muteTerrain"><svg><use href="#i-vol"/></svg></button>
+            <input class="range vol" type="range" min="0" max="100" value="75" aria-label="Âm lượng track địa hình" data-i18n-attr="aria-label:volTerrain" />
+            <span class="vol-val" data-vol>75%</span>
+          </div>
+        </div>
+        <div class="track-aside">
+          <div class="track-src" data-source>Chưa có dữ liệu</div>
+        </div>
+      </article>
+
+      <!-- Track B: climate -->
+      <article class="track" data-track="climate" aria-labelledby="track-b-title">
+        <div class="track-main">
+          <div class="track-head">
+            <span class="track-badge" aria-hidden="true">B</span>
+            <div style="min-width:0">
+              <h3 id="track-b-title" data-i18n="trackClimate">Âm thanh khí hậu</h3>
+              <div class="sub" data-i18n="trackClimateSub">Nhiệt độ · gió · mưa · độ ẩm · mây</div>
+            </div>
+            <span class="track-state" data-state-label data-i18n="stateIdle">Chờ chọn</span>
+          </div>
+          <canvas class="viz" data-viz="climate" width="600" height="68" aria-hidden="true"></canvas>
+          <div class="transport" role="group" aria-label="Điều khiển track khí hậu" data-i18n-attr="aria-label:transportClimate">
+            <button class="tbtn" type="button" data-act="restart" aria-label="Phát lại từ đầu" data-i18n-attr="aria-label:restart"><svg><use href="#i-restart"/></svg></button>
+            <button class="tbtn" type="button" data-act="back" aria-label="Tua lại 10 giây" data-i18n-attr="aria-label:back"><svg><use href="#i-back10"/></svg></button>
+            <button class="tbtn tbtn--play" type="button" data-act="toggle" aria-label="Phát" data-i18n-attr="aria-label:play"><svg><use href="#i-play"/></svg></button>
+            <button class="tbtn" type="button" data-act="fwd" aria-label="Tua tới 10 giây" data-i18n-attr="aria-label:fwd"><svg><use href="#i-fwd10"/></svg></button>
+            <button class="tbtn" type="button" data-act="stop" aria-label="Dừng hẳn" data-i18n-attr="aria-label:stop"><svg><use href="#i-stop"/></svg></button>
+          </div>
+          <div class="progress-row">
+            <input class="range seek" type="range" min="0" max="60" step="0.1" value="0" aria-label="Tiến trình track khí hậu" data-i18n-attr="aria-label:seekClimate" />
+            <span class="time" data-time>0:00 / 1:00</span>
+          </div>
+          <div class="vol-row">
+            <button class="tbtn tbtn--small" type="button" data-act="mute" aria-pressed="false" aria-label="Tắt tiếng track khí hậu" data-i18n-attr="aria-label:muteClimate"><svg><use href="#i-vol"/></svg></button>
+            <input class="range vol" type="range" min="0" max="100" value="70" aria-label="Âm lượng track khí hậu" data-i18n-attr="aria-label:volClimate" />
+            <span class="vol-val" data-vol>70%</span>
+          </div>
+          <div class="season-row">
+            <label for="season-range" data-i18n="season">Mùa</label>
+            <input id="season-range" class="range season" type="range" min="0" max="12" step="1" value="0" disabled aria-label="Chọn tháng để nghe khí hậu theo mùa" data-i18n-attr="aria-label:seasonAria" />
+            <output id="season-out" for="season-range" data-i18n="seasonAnnual">Cả năm</output>
+          </div>
+        </div>
+        <div class="track-aside">
+          <div class="track-src" data-source>Chưa có dữ liệu</div>
+        </div>
+      </article>
+    </div>
+
+  </footer>
+
+  <section class="lab labbar glass" id="lab-bar" aria-labelledby="lab-title">
+      <button class="labbar-toggle" id="lab-toggle" type="button" aria-expanded="false" aria-controls="lab-body">
+        <svg aria-hidden="true"><use href="#i-wave"/></svg>
+        <span id="lab-title" data-i18n="labTitle">Phòng thử âm thanh</span>
+        <span class="lab-hint" data-i18n="labHint">Thang âm · nhịp · nhạc cụ</span>
+        <svg class="chev" aria-hidden="true"><use href="#i-chev"/></svg>
+      </button>
+      <div class="lab-body" id="lab-body" inert>
+        <div class="lab-fields">
+          <label class="lab-field"><span data-i18n="labScale">Thang âm</span>
+            <select id="lab-scale">
+              <option value="auto" data-i18n="scaleAuto">Tự động</option>
+              <option value="pentatonic" data-i18n="scalePentatonic">Ngũ cung</option>
+              <option value="major" data-i18n="scaleMajor">Trưởng</option>
+              <option value="minor" data-i18n="scaleMinor">Thứ</option>
+              <option value="dorian" data-i18n="scaleDorian">Dorian</option>
+            </select>
+          </label>
+          <label class="lab-field"><span data-i18n="labTempo">Nhịp</span>
+            <input id="lab-tempo" class="range" type="range" min="60" max="160" step="5" value="100" aria-label="Nhịp" />
+            <output id="lab-tempo-out">100%</output>
+          </label>
+          <label class="lab-field"><span data-i18n="labInstrument">Nhạc cụ</span>
+            <select id="lab-instrument">
+              <option value="auto" data-i18n="instAuto">Theo vùng</option>
+              <option value="pluck" data-i18n="instPluck">Chuông điện</option>
+              <option value="dan-tranh" data-i18n="instDanTranh">Đàn tranh</option>
+              <option value="dan-bau" data-i18n="instDanBau">Đàn bầu</option>
+              <option value="sao" data-i18n="instSao">Sáo</option>
+              <option value="drum" data-i18n="instDrum">Trống</option>
+            </select>
+          </label>
+        </div>
+        <div class="lab-layers" role="group" aria-label="Lớp dữ liệu" data-i18n-attr="aria-label:layerGroup">
+          <label class="lab-check"><input type="checkbox" id="layer-climate" /> <span data-i18n="layerClimate">Biến đổi khí hậu</span></label>
+          <label class="lab-check"><input type="checkbox" id="layer-hazards" /> <span data-i18n="layerHazards">Thiên tai</span></label>
+          <label class="lab-check"><input type="checkbox" id="layer-bio" /> <span data-i18n="layerBio">Sinh quyển</span></label>
+          <label class="lab-check"><input type="checkbox" id="layer-weather" checked /> <span data-i18n="layerWeather">Thời tiết hiện tại</span></label>
+          <label class="lab-check"><span data-i18n="hazardWindow">Cửa sổ</span>
+            <select id="hazard-range" class="lab-select">
+              <option value="30" data-i18n="days30">30 ngày</option>
+              <option value="90" data-i18n="days90">90 ngày</option>
+              <option value="365" data-i18n="days365">1 năm</option>
+            </select>
+          </label>
+        </div>
+        <p class="lab-layer-status" id="layer-status" role="status" aria-live="polite"></p>
+        <div class="lab-actions">
+          <button class="btn btn--ghost btn--compact" id="lab-save" type="button" data-i18n="labSave">Lưu preset</button>
+          <button class="btn btn--ghost btn--compact" id="lab-share" type="button" data-i18n="labShare">Chia sẻ</button>
+          <span class="lab-status" id="lab-status" role="status"></span>
+        </div>
+      </div>
+  </section>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ================= ONBOARDING ================= -->
+<div class="modal" id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onb-title" data-open="false">
+  <div class="modal-card glass" style="background:linear-gradient(160deg, rgba(26,23,66,.97), rgba(10,13,34,.98))">
+    <div class="modal-eyebrow" data-i18n="onbEyebrow">NASA Space Apps Challenge · Lắng nghe Trái Đất</div>
+    <h2 id="onb-title" data-i18n="onbTitle">Mỗi quốc gia có một giọng nói riêng</h2>
+    <p class="lead" data-i18n="onbLead">Ứng dụng biến dữ liệu địa hình và khí hậu thật thành âm thanh. Người khiếm thị có thể “nghe” Trái Đất; người nhìn thấy có thể khám phá bằng mắt và tai cùng lúc.</p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="n">1</span>
+        <div>
+          <strong data-i18n="onbStep1Title">Chọn một quốc gia</strong>
+          <p data-i18n="onbStep1Body">Kéo xoay quả địa cầu, cuộn để phóng to, hoặc gõ tên quốc gia vào ô tìm kiếm (hỗ trợ tiếng Việt có dấu).</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="n">2</span>
+        <div>
+          <strong data-i18n="onbStep2Title">Nghe hai lớp âm thanh</strong>
+          <p data-i18n="onbStep2Body">Track A kể về núi, đồng bằng, rừng và biển. Track B kể về nắng, gió, mưa và mây của thời tiết hiện tại.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="n">3</span>
+        <div>
+          <strong data-i18n="onbStep3Title">Điều khiển bằng bàn phím</strong>
+          <p data-i18n="onbStep3Body">Space phát/dừng, ←/→ tua 10 giây, ↑/↓ chỉnh âm lượng. Mọi nút đều có nhãn cho trình đọc màn hình.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-note">
+      <svg aria-hidden="true"><use href="#i-info"/></svg>
+      <span data-i18n="onbNote">Trình duyệt chỉ cho phát âm thanh sau khi bạn tương tác. Nhấn “Bắt đầu nghe” để mở khoá âm thanh; bạn có thể tắt thuyết minh bất cứ lúc nào.</span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn--ghost" id="onb-skip" type="button" data-i18n="onbSkip">Bỏ qua</button>
+      <button class="btn btn--primary" id="onb-start" type="button" data-i18n="onbStart">Bắt đầu nghe</button>
+    </div>
+  </div>
+</div>
+
+<div class="sr-only" id="live-region" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<noscript>
+  <div style="position:fixed;inset:0;z-index:999;display:grid;place-items:center;background:#080b1e;color:#fff;padding:24px;text-align:center">
+    Vui lòng bật JavaScript để trải nghiệm Lắng nghe Trái Đất. / Please enable JavaScript.
+  </div>
+</noscript>
+
+<!-- Fixed-version CDN libraries (three r155 is required by globe.gl 2.32) -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/globe.gl@2.32.0/dist/globe.gl.min.js"></script>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
